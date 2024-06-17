@@ -1,0 +1,116 @@
+mutation insertFiles(
+  $cid: String
+  $counterID: String
+  $tx_hash: String
+  $file_size: String = ""
+  $file_hash: String = ""
+) {
+  insert_Files(
+    objects: {
+      cid: $cid
+      counterID: $counterID
+      tx_hash: $tx_hash
+      file_size: $file_size
+      file_hash: $file_hash
+    }
+  ) {
+    affected_rows
+  }
+}
+
+query getFiles {
+  Files(order_by: { created_at: desc }) {
+    cid
+    counterID
+    tx_hash
+    created_at
+    file_size
+    id
+    backup_file_cid
+    is_match
+    updated_at
+    is_verificationFailed
+  }
+}
+query getFilesByCid($_eq: String) {
+  Files(where: { cid: { _eq: $_eq } }) {
+    cid
+    counterID
+    tx_hash
+    created_at
+    file_size
+    id
+    backup_file_cid
+    is_match
+    updated_at
+    is_verificationFailed
+  }
+}
+
+query isDataPresent($cid: String = "") {
+  Files_aggregate(where: { cid: { _eq: $cid } }) {
+    aggregate {
+      count
+    }
+  }
+}
+
+mutation verifyFileByHash(
+  $backup_file_cid: String = ""
+  $tx_hash: String = ""
+) {
+  update_Files(
+    where: { tx_hash: { _eq: $tx_hash } }
+    _set: { is_match: true, backup_file_cid: $backup_file_cid }
+  ) {
+    affected_rows
+  }
+}
+mutation verifyFileById($backup_file_cid: String = "", $id: String = "") {
+  update_Files(
+    where: { counterID: { _eq: $id } }
+    _set: { is_match: true, backup_file_cid: $backup_file_cid }
+  ) {
+    affected_rows
+  }
+}
+query getFileByByTxHash($tx_hash: String = "") {
+  Files(where: { tx_hash: { _eq: $tx_hash } }) {
+    counterID
+    tx_hash
+    id
+    file_hash
+  }
+}
+query getFileByByTxId($tx_id: String = "") {
+  Files(where: { counterID: { _eq: $tx_id } }) {
+    counterID
+    tx_hash
+    id
+    file_hash
+  }
+}
+
+mutation updateIsVerifyFailedByTxHash(
+  $is_verificationFailed: Boolean
+  $tx_hash: String = ""
+) {
+  update_Files(
+    where: { tx_hash: { _eq: $tx_hash } }
+    _set: { is_verificationFailed: $is_verificationFailed }
+  ) {
+    affected_rows
+  }
+}
+
+mutation updateIsVerifyFailedById(
+  $is_verificationFailed: Boolean
+  $id: String = ""
+) {
+  update_Files(
+    where: { counterID: { _eq: $id } }
+    _set: { is_verificationFailed: $is_verificationFailed }
+  ) {
+    affected_rows
+  }
+}
