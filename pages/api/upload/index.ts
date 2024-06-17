@@ -8,28 +8,34 @@ import {
 import axios from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
+import * as Minio from 'minio';
+
+let minioClient = new Minio.Client({
+  endPoint: `${process.env.MINIO_ENDPOINT}`,
+  port: 9000,
+  useSSL: true,
+  accessKey: `${process.env.MINIO_ACCESS_KEY}`,
+  secretKey: `${process.env.MINIO_SECRET_KEY}`,
+})
+console.log('minioClient', minioClient)
+
 async function uploadImageToBlobStorage(
   blobName: string,
   localFilePath: Uint8Array
 ) {
   console.log('uploadImageToBlobStorage', blobName, localFilePath.length);
-  const connectionString =
-    "DefaultEndpointsProtocol=https;AccountName=kawasakisettlemint;AccountKey=" + process.env.NEXT_PUBLIC_AZ_SECRET + ";EndpointSuffix=core.windows.net";
-  const containerName = 'containerkhi';
 
+  const bucketName = 'data';
   console.log('from function', localFilePath.length);
-  const blobServiceClient =
-    BlobServiceClient.fromConnectionString(connectionString);
-  const containerClient = blobServiceClient.getContainerClient(containerName);
 
   try {
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-    const response = await blockBlobClient.upload(
-      Buffer.from(localFilePath),
-      localFilePath.length
-    );
-    console.log('File uploaded successfully!', response);
-    return response;
+    // Using putObject API upload your file to the bucket
+    minioClient.putObject(bucketName, blobName, Buffer.from(localFilePath), localFilePath.length, function (err, response) {
+    if (err)
+      return console.log(err)
+      console.log('File uploaded successfully.', response)
+      return response;
+    })
   } catch (error) {
     console.error('Error uploading file:', error);
     throw Error('Error uploading file:' + error);
