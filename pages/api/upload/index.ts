@@ -1,10 +1,3 @@
-import {
-  BlobServiceClient,
-  ContainerClient,
-  BlockBlobClient,
-  generateBlobSASQueryParameters,
-  BlobSASPermissions,
-} from '@azure/storage-blob';
 import axios from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
