@@ -9,15 +9,16 @@ import axios from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
 import * as Minio from 'minio';
+import { daemonClient } from 'nx/src/daemon/client/client';
 
 let minioClient = new Minio.Client({
   endPoint: `${process.env.MINIO_ENDPOINT}`,
-  port: 9000,
-  useSSL: true,
+  //port: 443,
+  //useSSL: true,
   accessKey: `${process.env.MINIO_ACCESS_KEY}`,
   secretKey: `${process.env.MINIO_SECRET_KEY}`,
 })
-console.log('minioClient', minioClient)
+//console.log('minioClient', minioClient)
 
 async function uploadImageToBlobStorage(
   blobName: string,
@@ -26,62 +27,61 @@ async function uploadImageToBlobStorage(
   console.log('uploadImageToBlobStorage', blobName, localFilePath.length);
 
   const bucketName = 'data';
-  console.log('from function', localFilePath.length);
+  //console.log('from function', localFilePath.length);
 
   try {
     // Using putObject API upload your file to the bucket
-    minioClient.putObject(bucketName, blobName, Buffer.from(localFilePath), localFilePath.length, function (err, response) {
-    if (err)
-      return console.log(err)
-      console.log('File uploaded successfully.', response)
-      return response;
-    })
+    const response = await minioClient.putObject(bucketName, blobName, Buffer.from(localFilePath), localFilePath.length)
+    console.log('File uploaded successfully.', response)
+    return response;
   } catch (error) {
     console.error('Error uploading file:', error);
     throw Error('Error uploading file:' + error);
   }
 }
 async function getBlobUrl(blobName: string) {
-  const connectionString =
-    "DefaultEndpointsProtocol=https;AccountName=kawasakisettlemint;AccountKey=" + process.env.NEXT_PUBLIC_AZ_SECRET + ";EndpointSuffix=core.windows.net";
-  const containerName = 'containerkhi';
-
-  const blobServiceClient =
-    BlobServiceClient.fromConnectionString(connectionString);
-  const containerClient = blobServiceClient.getContainerClient(containerName);
-
-  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-  const sasQueryParams = generateBlobSASQueryParameters(
-    {
-      containerName,
-      blobName,
-      permissions: BlobSASPermissions.parse('r'),
-      startsOn: new Date(),
-      expiresOn: new Date(new Date().valueOf() + 3600 * 1000),
-    },
-    //@ts-ignore
-    blockBlobClient.credential
-  );
-
-  const sasUrl = `${blockBlobClient.url}?${sasQueryParams.toString()}`;
+  // temporary url
+  const sasUrl = `${process.env.MINIO_ENDPOINT}`+'/data/' + blobName;
 
   return sasUrl;
 }
 
-async function getHash(uploaded_doc_url: string) {
-  const response = await axios.get(uploaded_doc_url, {
-    responseType: 'arraybuffer',
-  });
-  const fileData = response.data;
-  console.log(fileData);
+async function getHash(uploaded_doc_url: string, blobName: string) {
+  let bufs: any;
+  //let bufs = Buffer.alloc(0);
+  let fileHash: any;
 
-  const hash = crypto.createHash('sha256');
-  hash.update(fileData);
+  try {
+    const dataStream = await minioClient.getObject('data', blobName)
+    dataStream.on('data', function (chunk:any) {
+      console.log('Got a chunk of data: ' + chunk.length)
+      bufs += chunk;
+    })
+    dataStream.on('end', function () {
+      console.log('End.')
+      const hash = crypto.createHash('sha256');
+      //console.log('bufs', bufs)
 
-  const fileHash = hash.digest('hex');
-  return fileHash;
+      const resp = JSON.stringify(bufs);
+      //console.log('resp', resp)
+      hash.update(resp);
+      fileHash = hash.digest('hex');
+      console.log('file hash1', fileHash)
+      return (fileHash);
+    })
+    dataStream.on('error', function (err) {
+      console.log('Error....')
+      console.error(err)
+    })
+  
+
+  } catch (Error) {
+    console.error('Error hashing file:', Error);
+  }
+  console.log('file hash2', fileHash)
+
 }
+
 // eslint-disable-next-line import/no-anonymous-default-export
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const body = JSON.parse(req.body);
@@ -93,16 +93,17 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     body.is_verify,
     body.old_file_hash
   );
-  const response = await uploadImageToBlobStorage(
-    body.blobName,
-    body.data.data
-  );
-  // console.log(response)
-  // also  get the
-  const uploaded_doc_url = await getBlobUrl(body.blobName);
-  console.log(uploaded_doc_url);
-  const fileHash = await getHash(uploaded_doc_url);
   try {
+    const response = await uploadImageToBlobStorage(
+      body.blobName,
+      body.data.data
+    );
+    // console.log(response)
+    // also  get the
+    const uploaded_doc_url = await getBlobUrl(body.blobName);
+    console.log("url: ", uploaded_doc_url);
+    const fileHash = await getHash(uploaded_doc_url, body.blobName);
+    console.log('file hash', fileHash);
     // file hash
     res
       .status(200)
