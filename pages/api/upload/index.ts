@@ -40,12 +40,14 @@ async function getBlobUrl(blobName: string) {
 }
 
 async function getHash(uploaded_doc_url: string, blobName: string) {
-  let bufs: any;
-  //let bufs = Buffer.alloc(0);
-  let fileHash: any;
 
-  try {
-    const dataStream = await minioClient.getObject('data', blobName)
+  const promise = new Promise((resolve, reject) => {
+
+    let bufs: any;
+    //let bufs = Buffer.alloc(0);
+    let fileHash: any;
+  
+    minioClient.getObject('data', blobName).then(function(dataStream) {
     dataStream.on('data', function (chunk:any) {
       console.log('Got a chunk of data: ' + chunk.length)
       bufs += chunk;
@@ -60,19 +62,19 @@ async function getHash(uploaded_doc_url: string, blobName: string) {
       hash.update(resp);
       fileHash = hash.digest('hex');
       console.log('file hash1', fileHash)
-      return (fileHash);
+      resolve (fileHash);
     })
     dataStream.on('error', function (err) {
       console.log('Error....')
       console.error(err)
+      reject(err)
     })
-  
+    console.log('file hash2', fileHash)
 
-  } catch (Error) {
-    console.error('Error hashing file:', Error);
-  }
-  console.log('file hash2', fileHash)
+  }).catch((e) => {console.log('error', e)})
 
+  })
+  return promise;
 }
 
 // eslint-disable-next-line import/no-anonymous-default-export
