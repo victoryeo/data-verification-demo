@@ -27,9 +27,13 @@ const Page = () => {
     if (response.ok) {
       const data = await response.json();
 
+      console.log('data', data)
       const link = document.createElement('a');
+      console.log('link', link)
       link.href = data.downloadUrl;
       link.download = name;
+      console.log('link.href', link.href)
+      console.log('link.download', link.download)
       link.click();
     } else {
       console.error('Error fetching download URL');
