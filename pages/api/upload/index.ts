@@ -33,7 +33,7 @@ async function uploadImageToBlobStorage(
   }
 }
 async function getBlobUrl(blobName: string) {
-  // temporary url
+  // url
   const sasUrl = `${process.env.MINIO_ENDPOINT}`+'/data/' + blobName;
 
   return sasUrl;
