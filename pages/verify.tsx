@@ -68,8 +68,12 @@ const Page = () => {
   // console.log(input.hash);
   const handleMatch = async (file: any) => {
     setLoading(true);
+    console.log("1")
     if (file.length != 0) {
+      console.log("2")
       file.map(async (list: any) => {
+        console.log("3")
+        console.log(input)
         const encryption = sha256(list.name);
         // if (input.id !== '') {
         //   const data = await getFiles({ variables: { _eq: list.name } });
@@ -148,6 +152,7 @@ const Page = () => {
         //**** */ New logic ********
         // Get data from tx hash or id
         if (input.hash != '') {
+          console.log("4")
           // check for valid hash
           // const isHexadecimal = /^[0-9a-fA-F]+$/.test(input.hash);
           // console.log('here', isHexadecimal);
@@ -180,6 +185,8 @@ const Page = () => {
           });
 
           const file_upload_body = await file_upload_response.json();
+          console.log('file_upload_body', file_upload_body);
+          console.log('data hash', data.data?.Files[0]?.file_hash);
           // Update backup file
           if (file_upload_body?.file_hash === data.data?.Files[0]?.file_hash) {
             await verifyFileByHashMutation({
@@ -211,6 +218,7 @@ const Page = () => {
           setShowModal(true);
           setLoading(false);
         } else {
+          console.log("5")
           // check for valid hash
 
           if (input.id.length !== 64) {
@@ -243,6 +251,9 @@ const Page = () => {
 
           const file_upload_body = await file_upload_response.json();
 
+          console.log('file_upload_body', file_upload_body);
+          console.log('data hash', data.data?.Files[0]?.file_hash);
+          
           if (file_upload_body?.file_hash === data.data?.Files[0]?.file_hash) {
             await verifyFileByIdMutation({
               variables: {

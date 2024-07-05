@@ -55,7 +55,7 @@ async function getHash(uploaded_doc_url: string, blobName: string) {
     dataStream.on('end', function () {
       console.log('End.')
       const hash = crypto.createHash('sha256');
-      //console.log('bufs', bufs)
+      // console.log('bufs', bufs)
 
       const resp = JSON.stringify(bufs);
       //console.log('resp', resp)
@@ -99,6 +99,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     console.log("url: ", uploaded_doc_url);
     const fileHash = await getHash(uploaded_doc_url, body.blobName);
     console.log('file hash', fileHash);
+
+    const fileHash_again = await getHash(uploaded_doc_url, body.blobName);
+    console.log('file hash again', fileHash_again);
+
     // file hash
     res
       .status(200)

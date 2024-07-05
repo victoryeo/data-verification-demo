@@ -76,7 +76,7 @@ export function Page() {
 
             const file_upload_body = await file_upload_response.json();
 
-            // console.log('File upload response', file_upload_body);
+            console.log('File upload response', file_upload_body);
 
             const encryption = sha256(list.name);
 
